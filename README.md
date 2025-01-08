@@ -33,6 +33,13 @@
     venv\Scripts\activate     # Для Windows
     ```
 
+3. **Создать .env**
+   В .env файл впишите следующее:
+   ```bash     
+     SECRET_KEY=my_secret_key
+    ```
+PS Замените my_secret_key на актуальный,  который Вы можете пполучить после [регистрации](https://api.superjob.ru/register)
+
 3. **Установите зависимости**
    ```bash
    pip install -r requirements.txt
