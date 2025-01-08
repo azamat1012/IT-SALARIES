@@ -14,7 +14,6 @@ HH_HEADERS = {
     "Content-Type": "text/plain; charset=UTF-8"
 }
 
-
 def predict_salary(salary_from, salary_to):
     if salary_from and salary_to:
         return (salary_from + salary_to) / 2
@@ -24,19 +23,16 @@ def predict_salary(salary_from, salary_to):
         return salary_to * 0.8
     return None
 
-
 def predict_rub_salary_hh(vacancy):
     salary = vacancy.get("salary")
     if salary and salary["currency"] == "RUR":
         return predict_salary(salary.get("from"), salary.get("to"))
     return None
 
-
 def predict_rub_salary_sj(vacancy):
     if vacancy.get("currency") == "rub":
         return predict_salary(vacancy.get("payment_from"), vacancy.get("payment_to"))
     return None
-
 
 def get_vacancy_statistics(base_url, headers, params, langs, predict_salary_func):
     TABLE_DATA = [
@@ -97,21 +93,21 @@ def get_vacancy_statistics(base_url, headers, params, langs, predict_salary_func
     return TABLE_DATA
 
 
-# Main execution
+
 langs = ["PHP", "Python", "Java", "JavaScript",
          "C++", "C#", "C", "Ruby", "Scala", "Go"]
 
-# HeadHunter statistics
+
 hh_params = {
-    "area": 1,  # Москва
+    "area": 1,  
     "per_page": 100,
 }
 hh_statistics = get_vacancy_statistics(
     HH_BASE_URL, HH_HEADERS, hh_params, langs, predict_rub_salary_hh)
 
-# SuperJob statistics
+
 sj_params = {
-    "town": 4,  # Москва
+    "town": 4,  
     "count": 100,
 }
 sj_statistics = get_vacancy_statistics(
