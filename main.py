@@ -1,10 +1,14 @@
+import os
 import math
 import requests
 from terminaltables import AsciiTable
-# Base URLs and headers for APIs
+
+from dotenv import load_dotenv
+load_dotenv()
+
 HH_BASE_URL = "https://api.hh.ru/vacancies"
 SJ_BASE_URL = "https://api.superjob.ru/2.0/vacancies/"
-SJ_SECRET_KEY = "v3.r.137202653.1c8186e2fd5375094126c79b84f540477d7ab629.d8b4b082febb1efd2fed5338a1554ed9776974fa"
+SJ_SECRET_KEY = os.getenv("SECRET_KEY")
 
 SJ_HEADERS = {
     "X-Api-App-Id": SJ_SECRET_KEY
