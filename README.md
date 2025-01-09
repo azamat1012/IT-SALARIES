@@ -36,7 +36,7 @@
 3. **Создать .env**
    В .env файл впишите следующее:
    ```bash     
-     SECRET_KEY=my_secret_key
+     SJ_SECRET_KEY=my_secret_key
     ```
 PS Замените my_secret_key на актуальный,  который Вы можете пполучить после [регистрации](https://api.superjob.ru/register)
 
