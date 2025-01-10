@@ -7,15 +7,15 @@ from dotenv import load_dotenv
 
 HH_BASE_URL = "https://api.hh.ru/vacancies"
 SJ_BASE_URL = "https://api.superjob.ru/2.0/vacancies/"
-SJ_SECRET_KEY = os.getenv("SJ_SECRET_KEY")
 
-SJ_HEADERS = {
-    "X-Api-App-Id": SJ_SECRET_KEY
-}
 
-HH_HEADERS = {
-    "Content-Type": "text/plain; charset=UTF-8"
-}
+def load_env_variables():
+    load_dotenv()
+    sj_secret_key = os.getenv("SJ_SECRET_KEY")
+    if not sj_secret_key:
+        raise ValueError("""У Вас нет секретного ключа. Пожалуйста, напишите 
+                         Ваш секретный ключ в файл .env""")
+    return sj_secret_key
 
 
 def predict_salary(salary_from, salary_to):
@@ -41,22 +41,14 @@ def predict_rub_salary_sj(vacancy):
     return None
 
 
-def get_statistics(vacancies, predict_salary_func):
-    total_salary = 0
-    salary_count = 0
-
-    for vacancy in vacancies:
-        salary = predict_salary_func(vacancy)
-        if salary:
-            total_salary += salary
-            salary_count += 1
-
-    if salary_count > 0:
-        average_salary = round(
-            total_salary / salary_count)
-    else:
-        None
-    return average_salary, len(vacancies)
+def calculate_statistics(vacancies, predict_salary_func):
+    salaries = [
+        predict_salary_func(vacancy)
+        for vacancy in vacancies
+        if predict_salary_func(vacancy) is not None
+    ]
+    average_salary = round(sum(salaries) / len(salaries)) if salaries else None
+    return average_salary, len(salaries)
 
 
 def get_hh_statistics(langs, params):
@@ -65,74 +57,68 @@ def get_hh_statistics(langs, params):
 
     for lang in langs:
         params["text"] = f"Программист {lang}"
-        page = 0
+        params["page"] = 0
+
         total_vacancies = 0
         processed_vacancies = 0
+        all_vacancies = []
 
         while True:
-            params["page"] = page
             try:
-                response = requests.get(
-                    HH_BASE_URL, headers=HH_HEADERS, params=params)
+                response = requests.get(HH_BASE_URL, headers={
+                                        "Content-Type": "text/plain; charset=UTF-8"}, params=params)
                 response.raise_for_status()
             except requests.exceptions.RequestException:
                 break
 
-            vacancies = response.json()
-            vacancy = vacancies.get("items")
-            if not vacancy:
+            response_data = response.json()
+            vacancies = response_data.get("items", [])
+            total_vacancies = response_data.get("found", 0)
+
+            all_vacancies.extend(vacancies)
+            if params["page"] >= response_data.get("pages", 1) - 1:
                 break
+            params["page"] += 1
 
-            average_salary, count = get_statistics(
-                vacancy, predict_rub_salary_hh)
-            total_vacancies = vacancies.get("found", 0)
-            processed_vacancies += count
-
-            if page >= vacancies.get("pages", 1) - 1:
-                break
-
-            page += 1
-
+        average_salary, processed_vacancies = calculate_statistics(
+            all_vacancies, predict_rub_salary_hh)
         table_data.append(
             [lang, total_vacancies, processed_vacancies, average_salary])
 
     return table_data
 
 
-def get_sj_statistics(langs, params):
+def get_sj_statistics(langs, params, headers):
     table_data = [["Язык программирования", "Вакансий найдено",
                    "Вакансий обработано", "Средняя зарплата"]]
 
     for lang in langs:
         params["keyword"] = f"Программист {lang}"
-        page = 0
+        params["page"] = 0
+
         total_vacancies = 0
         processed_vacancies = 0
+        all_vacancies = []
 
-        while page < 10:
-            params["page"] = page
+        while True:
             try:
                 response = requests.get(
-                    SJ_BASE_URL, headers=SJ_HEADERS, params=params)
+                    SJ_BASE_URL, headers=headers, params=params)
                 response.raise_for_status()
             except requests.exceptions.RequestException:
                 break
 
-            vacancies = response.json()
-            vacancy = vacancies.get("objects")
-            if not vacancy:
+            response_data = response.json()
+            vacancies = response_data.get("objects", [])
+            total_vacancies = response_data.get("total", 0)
+
+            all_vacancies.extend(vacancies)
+            if not response_data.get("more", False):
                 break
+            params["page"] += 1
 
-            average_salary, count = get_statistics(
-                vacancy, predict_rub_salary_sj)
-            total_vacancies = vacancies.get("total", 0)
-            processed_vacancies += count
-
-            if not vacancies.get("more", False):
-                break
-
-            page += 1
-
+        average_salary, processed_vacancies = calculate_statistics(
+            all_vacancies, predict_rub_salary_sj)
         table_data.append(
             [lang, total_vacancies, processed_vacancies, average_salary])
 
@@ -140,18 +126,22 @@ def get_sj_statistics(langs, params):
 
 
 def main():
-    load_dotenv()
+    sj_secret_key = load_env_variables()
 
-    langs = ["PHP", "Python", "Java", "JavaScript",
-             "C++", "C#", "C", "Ruby", "Scala", "Go"]
-    MOSCOW_ID = [1, 4]
-    REQUESTS_PER_PAGE = 100
+    programming_languages = ["PHP", "Python", "Java",
+                             "JavaScript", "C++", "C#", "C", "Ruby", "Scala", "Go"]
+    moscow_area_id = 1
+    moscow_town_id = 4
+    vacancies_per_page = 100
 
-    hh_params = {"area": MOSCOW_ID[0], "per_page": REQUESTS_PER_PAGE}
-    sj_params = {"town": MOSCOW_ID[1], "count": REQUESTS_PER_PAGE}
+    hh_params = {"area": moscow_area_id, "per_page": vacancies_per_page}
+    sj_params = {"town": moscow_town_id, "count": vacancies_per_page}
 
-    hh_statistics = get_hh_statistics(langs, hh_params)
-    sj_statistics = get_sj_statistics(langs, sj_params)
+    sj_headers = {"X-Api-App-Id": sj_secret_key}
+
+    hh_statistics = get_hh_statistics(programming_languages, hh_params)
+    sj_statistics = get_sj_statistics(
+        programming_languages, sj_params, sj_headers)
 
     print(AsciiTable(hh_statistics, "HeadHunter").table)
     print(AsciiTable(sj_statistics, "SuperJob").table)
