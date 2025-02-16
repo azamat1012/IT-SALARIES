@@ -43,11 +43,11 @@ def predict_rub_salary_sj(vacancy):
 
 
 def calculate_statistics(vacancies, predict_salary_func):
-    salaries = [
-        predict_salary_func(vacancy)
-        for vacancy in vacancies
-        if predict_salary_func(vacancy) is not None
-    ]
+    salaries = []
+    for vacancy in vacancies:
+        predicted_salary = predict_salary_func(vacancy)        
+        if predicted_salary is not None:
+            salaries.append(predicted_salary)
     average_salary = round(sum(salaries) / len(salaries)) if salaries else None
     return average_salary, len(salaries)
 
