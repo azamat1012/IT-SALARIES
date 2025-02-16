@@ -1,3 +1,4 @@
+
 import os
 import math
 import requests
@@ -9,7 +10,7 @@ HH_BASE_URL = "https://api.hh.ru/vacancies"
 SJ_BASE_URL = "https://api.superjob.ru/2.0/vacancies/"
 
 
-def load_env_variables():
+def load_env_variable():
     load_dotenv()
     sj_secret_key = os.getenv("SJ_SECRET_KEY")
     if not sj_secret_key:
@@ -126,7 +127,7 @@ def get_sj_statistics(langs, params, headers):
 
 
 def main():
-    sj_secret_key = load_env_variables()
+    sj_secret_key = load_env_variable()
 
     programming_languages = ["PHP", "Python", "Java",
                              "JavaScript", "C++", "C#", "C", "Ruby", "Scala", "Go"]
